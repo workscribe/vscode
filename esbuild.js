@@ -1,0 +1,29 @@
+const esbuild = require('esbuild')
+
+const watch = process.argv.includes('--watch')
+
+async function main() {
+  const context = await esbuild.context({
+    entryPoints: ['src/extension.ts'],
+    bundle: true,
+    outfile: 'dist/extension.js',
+    external: ['vscode'],
+    format: 'cjs',
+    platform: 'node',
+    target: 'node20',
+    sourcemap: true,
+    minify: !watch,
+  })
+
+  if (watch) {
+    await context.watch()
+  } else {
+    await context.rebuild()
+    await context.dispose()
+  }
+}
+
+main().catch((error) => {
+  console.error(error)
+  process.exit(1)
+})
