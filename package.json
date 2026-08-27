@@ -1,0 +1,65 @@
+{
+  "name": "workscribe",
+  "displayName": "Workscribe",
+  "description": "Passive editor activity capture for Workscribe — file saves, debug sessions, and tasks feed into your daily work summary.",
+  "version": "0.1.0",
+  "publisher": "workscribe",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/workscribe/vscode"
+  },
+  "engines": {
+    "vscode": "^1.134.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Workscribe",
+      "properties": {
+        "workscribe.binaryPath": {
+          "type": "string",
+          "default": "",
+          "description": "Explicit path to the workscribe binary, if it isn't discoverable on PATH."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "typecheck": "tsc --noEmit",
+    "compile-tests": "tsc",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "pretest": "npm run build && npm run compile-tests",
+    "test": "vscode-test",
+    "package": "vsce package",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.10",
+    "@types/mocha": "^10.0.0",
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.134.0",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.28.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.5",
+    "typescript": "^7.0.2"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "biome check --write"
+    ]
+  }
+}
