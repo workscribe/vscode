@@ -10,6 +10,12 @@ Workscribe passively captures your terminal activity into daily work summaries. 
 
 None of this is sent anywhere by this extension. Every event is handed to the `workscribe` CLI via `workscribe _capture`, the same local-first pipeline the shell hook uses — data stays on your machine, subject to whatever AI provider you've configured for `workscribe summary`.
 
+## Last worked on
+
+When you switch to a file you last touched more than 24 hours ago, a `$(history)` status bar item shows how long it's been and, if one exists, the summary from that session — click-free, point-of-need recall for "what was I doing here" without digging through git log.
+
+Files you've touched more recently show nothing — the point is surfacing genuinely stale context, not restating something you already know from having just edited the file.
+
 ## Requirements
 
 - The [`workscribe` CLI](https://www.npmjs.com/package/@workscribe/cli) installed and on your `PATH` (`npm install -g @workscribe/cli`)

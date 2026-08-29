@@ -1,6 +1,7 @@
 import * as vscode from 'vscode'
 import { resolveBinaryPath } from './capture'
 import { registerListeners } from './listeners'
+import { registerLastWorkedOnStatusBar } from './statusBar'
 
 /**
  * A persistent status bar item, not a notification — shown once per session
@@ -41,6 +42,7 @@ async function startCapture(context: vscode.ExtensionContext): Promise<void> {
   }
 
   registerListeners(context, binaryPath)
+  registerLastWorkedOnStatusBar(context, binaryPath)
 }
 
 export function activate(context: vscode.ExtensionContext): void {
