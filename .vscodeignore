@@ -1,0 +1,15 @@
+.vscode/**
+.vscode-test/**
+.husky/**
+.github/**
+out/**
+src/**
+test/**
+node_modules/**
+.gitignore
+biome.json
+esbuild.js
+tsconfig.json
+.vscode-test.mjs
+**/*.map
+**/.eslintrc.json
