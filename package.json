@@ -5,6 +5,11 @@
   "version": "0.1.0",
   "publisher": "workscribe",
   "license": "MIT",
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#0d1117",
+    "theme": "dark"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/workscribe/vscode"
