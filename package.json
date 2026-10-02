@@ -2,7 +2,7 @@
   "name": "workscribe",
   "displayName": "Workscribe",
   "description": "Passive editor activity capture for Workscribe — file saves, debug sessions, and tasks feed into your daily work summary.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "workscribe",
   "license": "MIT",
   "icon": "images/icon.png",
