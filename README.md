@@ -1,6 +1,10 @@
 # Workscribe for VS Code
 
-Workscribe passively captures your terminal activity into daily work summaries. This extension closes the gap for everything that happens *outside* the terminal — file saves, debug sessions, and build/test tasks — so a summary built entirely in the editor is still accurate.
+<!-- TODO: screenshot or short GIF of the "last worked on" status bar item here -->
+
+[Workscribe](https://workscribe.co) turns your terminal and editor activity into a daily work summary, written automatically — no manual logging, no end-of-day scramble to remember what you did.
+
+This extension captures what happens *in the editor* — file saves, debug sessions, build and test tasks — the activity pure terminal capture misses entirely.
 
 ## What it captures
 
@@ -12,7 +16,7 @@ None of this is sent anywhere by this extension. Every event is handed to the `w
 
 ## Last worked on
 
-When you switch to a file you last touched more than 24 hours ago, a `$(history)` status bar item shows how long it's been and, if one exists, the summary from that session — click-free, point-of-need recall for "what was I doing here" without digging through git log.
+When you switch to a file you last touched more than 24 hours ago, a `$(history)` status bar item shows how long it's been and, if one exists, the summary from that session — point-of-need recall for "what was I doing here" without digging through git log.
 
 Files you've touched more recently show nothing — the point is surfacing genuinely stale context, not restating something you already know from having just edited the file.
 
@@ -33,20 +37,9 @@ Capture is disabled in untrusted (Restricted Mode) workspaces, since it spawns s
 |---|---|
 | `workscribe.binaryPath` | Explicit path to the `workscribe` binary, if it isn't discoverable on `PATH` |
 
-## Development
+## Contributing
 
-```bash
-npm install
-npm run watch   # esbuild in watch mode
-```
-
-Press `F5` in VS Code to launch an Extension Development Host with the extension loaded.
-
-```bash
-npm run lint       # Biome
-npm run typecheck  # tsc --noEmit
-npm test           # @vscode/test-cli, runs inside a real extension host
-```
+See [CONTRIBUTING.md](https://github.com/workscribe/vscode/blob/main/CONTRIBUTING.md) for local development setup, testing, and packaging. (Not bundled in the published extension — `vsce` only ships README, LICENSE, and CHANGELOG by default.)
 
 ## License
 
