@@ -20,6 +20,17 @@
   "categories": [
     "Other"
   ],
+  "keywords": [
+    "work journal",
+    "standup",
+    "daily summary",
+    "time tracking",
+    "activity log",
+    "productivity",
+    "AI summary",
+    "work log",
+    "automatic documentation"
+  ],
   "activationEvents": [
     "onStartupFinished"
   ],
