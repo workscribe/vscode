@@ -11,13 +11,13 @@ function isCapturableDocument(document: vscode.TextDocument): boolean {
 }
 
 /**
- * `workscribe _capture` requires --cwd (silently no-ops without it) — it's
- * what getGitContext() resolves repo_name/branch from. Prefer the containing
- * workspace folder; fall back to the file's own directory for single-file-open
- * scenarios, same as the shell hook does for any arbitrary cwd.
+ * `workscribe _capture` requires --cwd — it's what getGitContext() resolves
+ * repo_name/branch from via `git rev-parse --show-toplevel`. Always use the
+ * file's own directory, not the workspace folder: a workspace root spanning
+ * multiple sibling repos isn't itself a git repo, so repo_name resolves null.
  */
 function resolveCwdForUri(uri: vscode.Uri): string {
-  return vscode.workspace.getWorkspaceFolder(uri)?.uri.fsPath ?? path.dirname(uri.fsPath)
+  return path.dirname(uri.fsPath)
 }
 
 function resolveCwdForDebugSession(session: vscode.DebugSession): string | null {
