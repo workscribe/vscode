@@ -1,5 +1,7 @@
 import path from 'node:path'
 import * as vscode from 'vscode'
+import type { ActivityLog } from './activityLog'
+import type { CaptureEventType } from './activityLogLine'
 import { spawnCapture } from './capture'
 
 /**
@@ -35,33 +37,33 @@ function resolveCwdForTaskScope(scope: vscode.WorkspaceFolder | vscode.TaskScope
   return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? null
 }
 
-export function registerListeners(context: vscode.ExtensionContext, binaryPath: string): void {
+/**
+ * Sends each editor event to `workscribe _capture`, and notes it in the Workscribe Output channel. `target` is
+ * what the log shows: the saved file, or the folder for debug sessions and tasks.
+ */
+export function registerListeners(context: vscode.ExtensionContext, binaryPath: string, log: ActivityLog): void {
+  const capture = (type: CaptureEventType, target: string, args: string[]) => {
+    spawnCapture(binaryPath, ['--type', type, ...args, '--source', 'vscode'])
+    log.sent(type, target)
+  }
+
   context.subscriptions.push(
     vscode.workspace.onDidSaveTextDocument((document) => {
       if (!isCapturableDocument(document)) return
       const cwd = resolveCwdForUri(document.uri)
-      spawnCapture(binaryPath, [
-        '--type',
-        'code_edit',
-        '--file',
-        document.uri.fsPath,
-        '--cwd',
-        cwd,
-        '--source',
-        'vscode',
-      ])
+      capture('code_edit', document.uri.fsPath, ['--file', document.uri.fsPath, '--cwd', cwd])
     }),
 
     vscode.debug.onDidStartDebugSession((session) => {
       const cwd = resolveCwdForDebugSession(session)
       if (!cwd) return
-      spawnCapture(binaryPath, ['--type', 'debug_start', '--cwd', cwd, '--source', 'vscode'])
+      capture('debug_start', cwd, ['--cwd', cwd])
     }),
 
     vscode.debug.onDidTerminateDebugSession((session) => {
       const cwd = resolveCwdForDebugSession(session)
       if (!cwd) return
-      spawnCapture(binaryPath, ['--type', 'debug_end', '--cwd', cwd, '--source', 'vscode'])
+      capture('debug_end', cwd, ['--cwd', cwd])
     }),
 
     // A single task_run event on completion — matches the CLI's actual
@@ -70,7 +72,7 @@ export function registerListeners(context: vscode.ExtensionContext, binaryPath: 
     vscode.tasks.onDidEndTask((event) => {
       const cwd = resolveCwdForTaskScope(event.execution.task.scope)
       if (!cwd) return
-      spawnCapture(binaryPath, ['--type', 'task_run', '--cwd', cwd, '--source', 'vscode'])
+      capture('task_run', cwd, ['--cwd', cwd])
     }),
   )
 }
