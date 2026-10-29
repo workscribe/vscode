@@ -92,7 +92,8 @@
     "pretest": "npm run build && npm run compile-tests",
     "test": "vscode-test",
     "package": "vsce package",
-    "prepare": "husky"
+    "prepare": "husky",
+    "release": "bash -c 'set -e; VERSION=$(node -p \"require(\\\"./package.json\\\").version\"); git switch main && git pull origin main && git tag \"v$VERSION\" && git push origin \"v$VERSION\"'"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.10",
