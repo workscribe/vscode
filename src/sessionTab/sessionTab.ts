@@ -1,13 +1,12 @@
 import { randomBytes } from 'node:crypto'
 import * as vscode from 'vscode'
 import { querySessionForFile } from '../cli/context'
-import { MANAGE_TRUST_COMMAND, OPEN_SETTINGS_COMMAND } from '../constants'
+import { MANAGE_TRUST_COMMAND, OPEN_SETTINGS_COMMAND, SHOW_SESSION_COMMAND } from '../constants'
 import { type CliState, SessionTabController } from './sessionTabController'
 import { sessionTabHtml } from './sessionTabHtml'
 import { nextTarget } from './sessionTarget'
 
 export const SESSION_VIEW_ID = 'workscribe.session'
-export const SHOW_SESSION_COMMAND = 'workscribe.showSession'
 
 /** The Workscribe tab's webview, driven by SessionTabController (what to show, and when to ask the CLI). */
 class SessionTab implements vscode.WebviewViewProvider, vscode.Disposable {

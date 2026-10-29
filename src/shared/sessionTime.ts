@@ -15,6 +15,13 @@ export function formatClockTime(date: Date, options: { withSeconds?: boolean } =
   return parts.map((part) => String(part).padStart(2, '0')).join(':')
 }
 
+/** "Tue 28 Oct, 09:41". A timestamp that doesn't parse is shown as it came. */
+export function formatDayAndTime(timestamp: string): string {
+  const date = new Date(timestamp)
+  if (Number.isNaN(date.getTime())) return timestamp
+  return `${formatDayLabel(date)}, ${formatClockTime(date)}`
+}
+
 /**
  * "Tue 28 Oct, 09:10–10:40", or both days when a session runs past midnight. Timestamps that don't parse are shown
  * as they came, rather than as "NaN".
