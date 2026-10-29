@@ -1,5 +1,5 @@
 // The lines the Workscribe Output channel shows. Pure.
-import { formatClockTime } from './sessionTime'
+import { formatClockTime } from '../shared/sessionTime'
 
 /** The editor events the extension sends to `workscribe _capture --type`. */
 export type CaptureEventType = 'code_edit' | 'debug_start' | 'debug_end' | 'task_run'

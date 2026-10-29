@@ -1,6 +1,6 @@
 import * as assert from 'node:assert'
-import type { SessionContext } from '../../src/context'
-import { LAST_WORKED_ON_THRESHOLD_MS, shouldSurface } from '../../src/context'
+import type { SessionContext } from '../../../src/cli/context'
+import { LAST_WORKED_ON_THRESHOLD_MS, shouldSurface } from '../../../src/cli/context'
 
 function makeContext(startedAt: string): SessionContext {
   return {

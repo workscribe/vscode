@@ -1,11 +1,11 @@
 import * as vscode from 'vscode'
-import type { ActivityLog } from './activityLog'
-import { resolveBinaryPath } from './capture'
+import type { ActivityLog } from '../activityLog/activityLog'
+import { resolveBinaryPath } from '../cli/capture'
+import { BINARY_PATH_SETTING, OPEN_SETTINGS_COMMAND } from '../constants'
+import type { SessionTabHandle } from '../sessionTab/sessionTab'
+import { registerLastWorkedOnStatusBar } from '../statusBar/statusBar'
 import { CaptureStartup } from './captureStartup'
-import { BINARY_PATH_SETTING, OPEN_SETTINGS_COMMAND } from './constants'
 import { registerListeners } from './listeners'
-import type { SessionTabHandle } from './sessionTab'
-import { registerLastWorkedOnStatusBar } from './statusBar'
 
 /**
  * A persistent status bar item, not a notification — shown once per session

@@ -1,8 +1,8 @@
 import * as vscode from 'vscode'
-import { registerActivityLog } from './activityLog'
-import { createCaptureStarter } from './captureStarter'
+import { registerActivityLog } from './activityLog/activityLog'
+import { createCaptureStarter } from './capture/captureStarter'
 import { BINARY_PATH_SETTING } from './constants'
-import { registerSessionTab } from './sessionTab'
+import { registerSessionTab } from './sessionTab/sessionTab'
 
 export function activate(context: vscode.ExtensionContext): void {
   // The tab, its command and the log come first and whatever the trust or CLI state, so the tab can always say

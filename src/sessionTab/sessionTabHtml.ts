@@ -4,10 +4,10 @@
 // what renderSummary builds from a known shape (## headings, - bullets, `code`). The page runs no scripts; its
 // links are command links VS Code allows by name (see sessionTab.ts).
 import path from 'node:path'
-import { BINARY_PATH_SETTING, MANAGE_TRUST_COMMAND, OPEN_SETTINGS_COMMAND } from './constants'
-import type { SessionContext } from './context'
+import type { SessionContext } from '../cli/context'
+import { BINARY_PATH_SETTING, MANAGE_TRUST_COMMAND, OPEN_SETTINGS_COMMAND } from '../constants'
+import { formatSessionDuration, formatSessionSpan } from '../shared/sessionTime'
 import type { CliState } from './sessionTabController'
-import { formatSessionDuration, formatSessionSpan } from './sessionTime'
 
 /** What the tab shows: why it can't ask the CLI yet (any CLI state but ready), or what it found. */
 export type TabState =

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode'
-import type { SessionContext } from './context'
-import { queryContext, shouldSurface } from './context'
+import type { SessionContext } from '../cli/context'
+import { queryContext, shouldSurface } from '../cli/context'
 
 /**
  * Tracks the active editor, not "file open" literally — onDidOpenTextDocument

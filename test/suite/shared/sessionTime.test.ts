@@ -1,5 +1,5 @@
 import * as assert from 'node:assert'
-import { formatSessionDuration, formatSessionSpan } from '../../src/sessionTime'
+import { formatSessionDuration, formatSessionSpan } from '../../../src/shared/sessionTime'
 
 /** An ISO timestamp for a local date and time, so the tests pass in any time zone. */
 function local(year: number, month: number, day: number, hours: number, minutes: number): string {

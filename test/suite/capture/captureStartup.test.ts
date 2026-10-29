@@ -1,5 +1,5 @@
 import * as assert from 'node:assert'
-import { CaptureStartup } from '../../src/captureStartup'
+import { CaptureStartup } from '../../../src/capture/captureStartup'
 
 /** A fake CLI lookup the test resolves, and a record of what start-up did. */
 function harness(options: { trusted?: boolean } = {}) {

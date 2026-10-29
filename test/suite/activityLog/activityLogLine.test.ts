@@ -1,5 +1,5 @@
 import * as assert from 'node:assert'
-import { formatCaptureStatus, formatLogLine } from '../../src/activityLogLine'
+import { formatCaptureStatus, formatLogLine } from '../../../src/activityLog/activityLogLine'
 
 const TIME = new Date(2026, 9, 28, 9, 41, 7)
 

@@ -1,6 +1,7 @@
 // What the Workscribe tab shows and when it asks the CLI — free of `vscode`, so it's tested with fake timers and
 // a fake CLI. sessionTab.ts connects it to the webview and the editor events.
-import type { SessionLookup } from './context'
+import type { SessionLookup } from '../cli/context'
+import { SAVE_REFRESH_DELAY_MS } from '../constants'
 import type { TabState } from './sessionTabHtml'
 
 /** Whether the tab can ask the CLI yet — still looking, not allowed, not found, or ready. */
@@ -10,8 +11,6 @@ export type CliState =
   | { kind: 'no-cli' }
   | { kind: 'ready'; binaryPath: string }
 
-// Capture is a detached process: give it time to write the save before asking about the file again
-export const SAVE_REFRESH_DELAY_MS = 2000
 // Quick answers replace the page before this, so "Loading…" doesn't flash
 export const LOADING_DELAY_MS = 300
 
