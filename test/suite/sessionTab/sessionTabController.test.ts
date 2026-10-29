@@ -1,12 +1,8 @@
 import * as assert from 'node:assert'
-import type { SessionContext, SessionLookup } from '../../src/context'
-import {
-  type CliState,
-  LOADING_DELAY_MS,
-  SAVE_REFRESH_DELAY_MS,
-  SessionTabController,
-} from '../../src/sessionTabController'
-import type { TabState } from '../../src/sessionTabHtml'
+import type { SessionContext, SessionLookup } from '../../../src/cli/context'
+import { SAVE_REFRESH_DELAY_MS } from '../../../src/constants'
+import { type CliState, LOADING_DELAY_MS, SessionTabController } from '../../../src/sessionTab/sessionTabController'
+import type { TabState } from '../../../src/sessionTab/sessionTabHtml'
 
 const READY: CliState = { kind: 'ready', binaryPath: '/usr/local/bin/workscribe' }
 const README = '/repo/README.md'

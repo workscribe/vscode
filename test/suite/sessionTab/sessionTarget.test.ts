@@ -1,5 +1,5 @@
 import * as assert from 'node:assert'
-import { nextTarget } from '../../src/sessionTarget'
+import { nextTarget } from '../../../src/sessionTab/sessionTarget'
 
 const README = '/Users/dev/api/README.md'
 

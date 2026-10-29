@@ -1,8 +1,8 @@
 import path from 'node:path'
 import * as vscode from 'vscode'
-import type { ActivityLog } from './activityLog'
-import type { CaptureEventType } from './activityLogLine'
-import { spawnCapture } from './capture'
+import type { ActivityLog } from '../activityLog/activityLog'
+import type { CaptureEventType } from '../activityLog/activityLogLine'
+import { spawnCapture } from '../cli/capture'
 
 /**
  * Only real, on-disk documents represent a meaningful code_edit event.

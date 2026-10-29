@@ -1,6 +1,6 @@
 import * as assert from 'node:assert'
-import type { SessionContext } from '../../src/context'
-import { escapeHtml, renderSummary, sessionTabHtml, type TabState } from '../../src/sessionTabHtml'
+import type { SessionContext } from '../../../src/cli/context'
+import { escapeHtml, renderSummary, sessionTabHtml, type TabState } from '../../../src/sessionTab/sessionTabHtml'
 
 const NONCE = 'test-nonce'
 
