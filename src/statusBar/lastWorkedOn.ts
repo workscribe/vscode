@@ -1,12 +1,13 @@
 // What the "last worked on" status bar item says: its text, its spoken label and its tooltip. Pure — no `vscode` —
 // so it's tested directly; statusBar.ts turns the markdown into a MarkdownString.
 
-import type { FileDetails, SessionContext } from '../cli/context'
+import { type FileDetails, type SessionContext, threadOf } from '../cli/context'
 import { SHOW_SESSION_COMMAND } from '../constants'
 import { formatDayAndTime } from '../shared/sessionTime'
 
 const MAX_TOOLTIP_COMMITS = 3
 const MAX_EXCERPT_BULLETS = 3
+const MAX_TOOLTIP_ALONGSIDE = 3
 // Everything markdown could read as formatting or a link; the backslash goes first so it isn't escaped twice
 const MARKDOWN_SPECIAL = /[\\`*_{}[\]()#+\-.!|<>&~]/g
 
@@ -79,15 +80,26 @@ function sessionSection(summary: string | null): string[] {
   ]
 }
 
+/** The projects worked in the same stretch (CLI 2.2+), named in one line. Work outside a repo isn't a project. */
+function alongsideSection(session: SessionContext): string[] {
+  const names = (threadOf(session)?.alongside ?? []).flatMap((other) => (other.repoName ? [other.repoName] : []))
+  if (names.length === 0) return []
+  const shown = names.slice(0, MAX_TOOLTIP_ALONGSIDE).map(escapeMarkdown).join(', ')
+  const hiddenCount = names.length - MAX_TOOLTIP_ALONGSIDE
+  return [`**Worked alongside** ${shown}${hiddenCount > 0 ? ` and ${hiddenCount} more` : ''}`]
+}
+
 /**
  * The tooltip: about the file first (CLI 2.1+), then the session it was last worked in, then a link to open it in
- * the Workscribe tab. An older CLI sends no file details, so the tooltip is the session part alone.
+ * the Workscribe tab. A CLI on threads (2.2+) adds the projects worked alongside. An older CLI sends no file details,
+ * so the tooltip is the session part alone.
  */
 export function tooltipMarkdown(session: SessionContext, filePath: string): string {
   const sections = [
     [`**Workscribe** · you last worked on this file ${escapeMarkdown(session.timeAgo)}`],
     ...(session.file ? [fileSection(session.file), commitsSection(session.file)] : []),
     sessionSection(session.summary),
+    alongsideSection(session),
     [`[Open session in Workscribe](${showSessionLink(filePath)})`],
   ].filter((section) => section.length > 0)
   return sections.map((section) => section.join('\n')).join('\n\n')

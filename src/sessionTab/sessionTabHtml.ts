@@ -4,7 +4,7 @@
 // what renderSummary builds from a known shape (## headings, - bullets, `code`). The page runs no scripts; its
 // links are command links VS Code allows by name (see sessionTab.ts).
 import path from 'node:path'
-import type { SessionContext } from '../cli/context'
+import { type AlongsideThread, type SessionContext, threadOf } from '../cli/context'
 import { BINARY_PATH_SETTING, MANAGE_TRUST_COMMAND, OPEN_SETTINGS_COMMAND } from '../constants'
 import { formatSessionDuration, formatSessionSpan } from '../shared/sessionTime'
 import type { CliState } from './sessionTabController'
@@ -69,10 +69,35 @@ function describeFile(session: SessionContext, filePath: string): string {
   return session.file?.relativePath ?? path.basename(filePath)
 }
 
+/** One project worked in the same stretch: its name, when, how long it was active and its events. */
+function renderAlongsideThread(other: AlongsideThread): string {
+  const facts = [
+    formatSessionSpan(other.startedAt, other.endedAt),
+    `${formatSessionDuration(other.activeMinutes)} active`,
+    `${other.eventCount} event${other.eventCount === 1 ? '' : 's'}`,
+  ]
+  return `<li><strong>${escapeHtml(other.repoName || 'Outside a repo')}</strong> · ${facts.map(escapeHtml).join(' · ')}</li>`
+}
+
+/** The other projects worked in the same stretch as this file's (CLI 2.2+); nothing from an older CLI. */
+function renderAlongside(alongside: AlongsideThread[]): string[] {
+  if (alongside.length === 0) return []
+  return [
+    '<section class="alongside">',
+    '<h3>Worked alongside</h3>',
+    '<ul>',
+    ...alongside.map(renderAlongsideThread),
+    '</ul>',
+    '</section>',
+  ]
+}
+
 function renderSessionBody(session: SessionContext, filePath: string): string {
+  const thread = threadOf(session)
   const facts = [
     formatSessionSpan(session.startedAt, session.endedAt),
     formatSessionDuration(session.durationMinutes),
+    thread ? `${formatSessionDuration(thread.activeMinutes)} active` : null,
     session.branch ? `on ${session.branch}` : null,
     `${session.eventCount} event${session.eventCount === 1 ? '' : 's'}`,
   ].filter((fact): fact is string => fact !== null)
@@ -85,6 +110,7 @@ function renderSessionBody(session: SessionContext, filePath: string): string {
     session.summary
       ? `<section class="summary">${renderSummary(session.summary)}</section>`
       : renderMessage('No summary yet.'),
+    ...renderAlongside(thread?.alongside ?? []),
   ].join('\n')
 }
 
