@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- **The file's own project, and what you worked on alongside it:** with Workscribe CLI 2.2 and later, once its
+  data is upgraded, the tooltip and the Workscribe tab describe the file's own project's work, not whichever session
+  held its last save. The tooltip names the other projects worked in the same stretch. The tab adds how long the
+  project was active, and lists each project alongside it with its time span and active time. With an older CLI,
+  both look as they did in 0.2.0.
+
 ## 0.2.0
 
 - **Last worked on, clearer:** the status bar item reads **WS · 25 days ago** when you open a file you last worked

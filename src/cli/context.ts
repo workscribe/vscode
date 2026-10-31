@@ -32,6 +32,66 @@ export interface SessionContext {
   summary: string | null
   /** CLI 2.1+, with --file only */
   file?: FileDetails | null
+  /** CLI 2.2+: the `context` document's version */
+  schemaVersion?: number
+  /** CLI 2.2+, once its data is upgraded: the file's own project thread. Null when the CLI answered from sessions */
+  thread?: ContextThread | null
+  /** CLI 2.2+: the stretch of work the thread is part of */
+  block?: ContextBlock | null
+  /** CLI 2.2+: the other projects worked in the same stretch, in order */
+  alongside?: AlongsideThread[] | null
+}
+
+/** The file's own project's work in the stretch, as the CLI names it. Only `activeMinutes` is shown today. */
+export interface ContextThread {
+  key: string
+  projectId: number | null
+  activeMinutes: number
+}
+
+/** The whole stretch of work, across every project. */
+export interface ContextBlock {
+  startedAt: string
+  endedAt: string
+  activeMinutes: number
+}
+
+/** Another project worked in the same stretch as the file's own. `repoName` is null for work outside a repo. */
+export interface AlongsideThread {
+  repoName: string | null
+  startedAt: string
+  endedAt: string
+  eventCount: number
+  activeMinutes: number
+}
+
+/** The thread view of an answer, once checked: what the tooltip and the tab show beyond a session. */
+export interface ThreadView {
+  activeMinutes: number
+  alongside: AlongsideThread[]
+}
+
+function isAlongsideThread(value: unknown): value is AlongsideThread {
+  if (typeof value !== 'object' || value === null) return false
+  const thread = value as Record<string, unknown>
+  return (
+    (thread.repoName === null || typeof thread.repoName === 'string') &&
+    typeof thread.startedAt === 'string' &&
+    typeof thread.endedAt === 'string' &&
+    typeof thread.eventCount === 'number' &&
+    typeof thread.activeMinutes === 'number'
+  )
+}
+
+/**
+ * The answer's thread, checked before anything shows it: null from a CLI before 2.2, or one that answered from
+ * sessions, and then the extension looks exactly as it did. An `alongside` entry that isn't well formed is dropped.
+ */
+export function threadOf(session: SessionContext): ThreadView | null {
+  const activeMinutes = session.thread?.activeMinutes
+  if (typeof activeMinutes !== 'number') return null
+  const alongside = Array.isArray(session.alongside) ? session.alongside.filter(isAlongsideThread) : []
+  return { activeMinutes, alongside }
 }
 
 /** A `context --file` answer: a session, nothing recorded for the file, or no usable answer from the CLI. */

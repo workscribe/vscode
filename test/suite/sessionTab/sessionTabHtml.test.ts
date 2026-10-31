@@ -1,6 +1,8 @@
 import * as assert from 'node:assert'
 import type { SessionContext } from '../../../src/cli/context'
 import { escapeHtml, renderSummary, sessionTabHtml, type TabState } from '../../../src/sessionTab/sessionTabHtml'
+import { formatSessionSpan } from '../../../src/shared/sessionTime'
+import { CLI_ALONGSIDE, ON_A_THREAD, ON_A_THREAD_ALONE } from '../threadFixtures'
 
 const NONCE = 'test-nonce'
 
@@ -113,6 +115,56 @@ suite('sessionTabHtml — the page', () => {
     assert.ok(html.includes('Last worked on with <code>index.ts</code>'))
     assert.ok(html.includes('1 event'))
     assert.ok(html.includes('No summary yet.'))
+  })
+
+  test('shows the thread: its active time, and each project worked alongside with when and how long', () => {
+    const html = page({ kind: 'session', session: session(ON_A_THREAD), filePath: '/Users/dev/api/README.md' })
+
+    assert.ok(html.includes('35m active'))
+    assert.ok(html.includes('<h3>Worked alongside</h3>'))
+    assert.ok(html.includes('<strong>workscribe/cli</strong>'))
+    assert.ok(html.includes('4h 40m active'))
+    assert.ok(html.includes('369 events'))
+    assert.ok(html.includes('<strong>Outside a repo</strong>'))
+    assert.ok(html.indexOf('workscribe/cli') < html.indexOf('Outside a repo'))
+  })
+
+  test('shows the active time and no alongside section when the project was the only one worked', () => {
+    const html = page({ kind: 'session', session: session(ON_A_THREAD_ALONE), filePath: '/Users/dev/api/README.md' })
+
+    assert.ok(html.includes('35m active'))
+    assert.ok(!html.includes('Worked alongside'))
+  })
+
+  test('names a project with an empty name as outside a repo', () => {
+    const alongside = [{ ...CLI_ALONGSIDE, repoName: '' }]
+    const html = page({ kind: 'session', session: session({ ...ON_A_THREAD, alongside }), filePath: '/a.ts' })
+
+    assert.ok(html.includes('<strong>Outside a repo</strong>'))
+  })
+
+  test('escapes the names of projects worked alongside', () => {
+    const alongside = [{ ...CLI_ALONGSIDE, repoName: '<script>x</script>' }]
+    const html = page({ kind: 'session', session: session({ ...ON_A_THREAD, alongside }), filePath: '/a.ts' })
+
+    assert.ok(!html.includes('<script>x'))
+  })
+
+  test('is exactly as before when the CLI answered from sessions', () => {
+    const state = (extra: Partial<SessionContext>): TabState => ({
+      kind: 'session',
+      session: session(extra),
+      filePath: '/Users/dev/api/README.md',
+    })
+
+    const answeredFromSessions = page(state({ thread: null, block: null, alongside: null }))
+
+    assert.strictEqual(answeredFromSessions, page(state({})))
+    // The 0.2.0 facts line and body, exactly: no active time, nothing alongside
+    const span = formatSessionSpan('2026-10-28T09:10:00.000Z', '2026-10-28T10:40:00.000Z')
+    assert.ok(answeredFromSessions.includes(`<p class="facts">${span} · 1h 30m · on main · 12 events</p>`))
+    assert.ok(!answeredFromSessions.includes('m active'))
+    assert.ok(!answeredFromSessions.includes('Worked alongside'))
   })
 
   test('explains each empty state, with a link where there is something to do', () => {

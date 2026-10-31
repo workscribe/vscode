@@ -8,6 +8,7 @@ import {
   statusText,
   tooltipMarkdown,
 } from '../../../src/statusBar/lastWorkedOn'
+import { CLI_ALONGSIDE, ON_A_THREAD, ON_A_THREAD_ALONE } from '../threadFixtures'
 
 const FILE = '/Users/dev/api/src/auth.ts'
 
@@ -146,5 +147,43 @@ suite('tooltipMarkdown', () => {
 
   test('leaves the session part out when there is no summary', () => {
     assert.ok(!tooltipMarkdown(session({ summary: null }), FILE).includes('From the session'))
+  })
+
+  test('names the projects worked alongside, after the session and before the link — not work outside a repo', () => {
+    const markdown = tooltipMarkdown(session({ file: FILE_DETAILS, ...ON_A_THREAD }), FILE)
+
+    assert.ok(markdown.includes('**Worked alongside** workscribe/cli, workscribe/vscode'))
+    assert.ok(!markdown.includes('null'))
+    assert.ok(markdown.indexOf('**From the session**') < markdown.indexOf('**Worked alongside**'))
+    assert.ok(markdown.endsWith(`[Open session in Workscribe](${showSessionLink(FILE)})`))
+  })
+
+  test('names at most 3 projects alongside, then how many more, escaped', () => {
+    const named = ['a/one', 'b/[two](command:evil)', 'c/three', 'd/four', 'e/five'].map((repoName) => ({
+      ...CLI_ALONGSIDE,
+      repoName,
+    }))
+
+    const markdown = tooltipMarkdown(session({ ...ON_A_THREAD, alongside: named }), FILE)
+
+    assert.ok(markdown.includes('a/one, b/\\[two\\]\\(command:evil\\), c/three and 2 more'))
+    assert.ok(!markdown.includes('d/four'))
+  })
+
+  test('is exactly as before on a thread with nobody alongside', () => {
+    assert.strictEqual(
+      tooltipMarkdown(session({ file: FILE_DETAILS, ...ON_A_THREAD_ALONE }), FILE),
+      tooltipMarkdown(session({ file: FILE_DETAILS }), FILE),
+    )
+  })
+
+  test('is exactly as before when the CLI answered from sessions, or sends no thread at all', () => {
+    const before = tooltipMarkdown(session({ file: FILE_DETAILS }), FILE)
+
+    assert.strictEqual(
+      tooltipMarkdown(session({ file: FILE_DETAILS, thread: null, block: null, alongside: null }), FILE),
+      before,
+    )
+    assert.ok(!before.includes('Worked alongside'))
   })
 })
