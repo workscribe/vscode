@@ -32,13 +32,13 @@ export interface SessionContext {
   summary: string | null
   /** CLI 2.1+, with --file only */
   file?: FileDetails | null
-  /** CLI 2.2+: the `context` document's version */
+  /** CLI 3.0+: the `context` document's version */
   schemaVersion?: number
-  /** CLI 2.2+, once its data is upgraded: the file's own project thread. Null when the CLI answered from sessions */
+  /** CLI 3.0+, once its data is upgraded: the file's own project thread. Null when the CLI answered from sessions */
   thread?: ContextThread | null
-  /** CLI 2.2+: the stretch of work the thread is part of */
+  /** CLI 3.0+: the stretch of work the thread is part of */
   block?: ContextBlock | null
-  /** CLI 2.2+: the other projects worked in the same stretch, in order */
+  /** CLI 3.0+: the other projects worked in the same stretch, in order */
   alongside?: AlongsideThread[] | null
 }
 
@@ -84,7 +84,7 @@ function isAlongsideThread(value: unknown): value is AlongsideThread {
 }
 
 /**
- * The answer's thread, checked before anything shows it: null from a CLI before 2.2, or one that answered from
+ * The answer's thread, checked before anything shows it: null from a CLI before 3.0, or one that answered from
  * sessions, and then the extension looks exactly as it did. An `alongside` entry that isn't well formed is dropped.
  */
 export function threadOf(session: SessionContext): ThreadView | null {

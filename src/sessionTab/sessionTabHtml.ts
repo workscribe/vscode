@@ -79,7 +79,7 @@ function renderAlongsideThread(other: AlongsideThread): string {
   return `<li><strong>${escapeHtml(other.repoName || 'Outside a repo')}</strong> · ${facts.map(escapeHtml).join(' · ')}</li>`
 }
 
-/** The other projects worked in the same stretch as this file's (CLI 2.2+); nothing from an older CLI. */
+/** The other projects worked in the same stretch as this file's (CLI 3.0+); nothing from an older CLI. */
 function renderAlongside(alongside: AlongsideThread[]): string[] {
   if (alongside.length === 0) return []
   return [

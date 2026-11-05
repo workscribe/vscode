@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
-- **The file's own project, and what you worked on alongside it:** with Workscribe CLI 2.2 and later, once its
+- **The file's own project, and what you worked on alongside it:** with Workscribe CLI 3.0 and later, once its
   data is upgraded, the tooltip and the Workscribe tab describe the file's own project's work, not whichever session
   held its last save. The tooltip names the other projects worked in the same stretch. The tab adds how long the
   project was active, and lists each project alongside it with its time span and active time. With an older CLI,

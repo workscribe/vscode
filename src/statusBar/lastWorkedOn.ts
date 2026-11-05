@@ -80,7 +80,7 @@ function sessionSection(summary: string | null): string[] {
   ]
 }
 
-/** The projects worked in the same stretch (CLI 2.2+), named in one line. Work outside a repo isn't a project. */
+/** The projects worked in the same stretch (CLI 3.0+), named in one line. Work outside a repo isn't a project. */
 function alongsideSection(session: SessionContext): string[] {
   const names = (threadOf(session)?.alongside ?? []).flatMap((other) => (other.repoName ? [other.repoName] : []))
   if (names.length === 0) return []
@@ -91,7 +91,7 @@ function alongsideSection(session: SessionContext): string[] {
 
 /**
  * The tooltip: about the file first (CLI 2.1+), then the session it was last worked in, then a link to open it in
- * the Workscribe tab. A CLI on threads (2.2+) adds the projects worked alongside. An older CLI sends no file details,
+ * the Workscribe tab. A CLI on threads (3.0+) adds the projects worked alongside. An older CLI sends no file details,
  * so the tooltip is the session part alone.
  */
 export function tooltipMarkdown(session: SessionContext, filePath: string): string {
