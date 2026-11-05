@@ -1,4 +1,4 @@
-// What a CLI on threads (2.2+) adds to a `context --file --json` answer, shared by the tooltip and tab tests: the
+// What a CLI on threads (3.0+) adds to a `context --file --json` answer, shared by the tooltip and tab tests: the
 // landing-page README's thread, with cli, work outside a repo and vscode worked alongside it.
 import type { AlongsideThread, SessionContext } from '../../src/cli/context'
 
