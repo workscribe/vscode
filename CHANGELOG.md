@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **Line counts on saves:** with Workscribe CLI 3.3.0 or later, each save also tells the CLI how many lines it
+  added and removed, worked out against the last version of the file the extension sent. Files over about 1 MB or
+  20,000 lines, and binary files, are sent without counts. A CLI before 3.3.0 is asked first and gets saves exactly
+  as before, since it would reject the counts.
+- **Who changed the file, and what the agent said:** with CLI 3.3.0 or later, the status bar tooltip says who changed
+  the file and by how many lines (you, and each coding agent), and shows what each agent session said it did, when
+  you keep recaps with `capture.agentMessages`. The Workscribe tab adds a **Who changed this file** list and each
+  recap in full. With an older CLI, both look as they did in 0.3.0.
+
 ## 0.3.0
 
 - **The file's own project, and what you worked on alongside it:** with Workscribe CLI 3.0 and later, once its

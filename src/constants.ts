@@ -14,6 +14,9 @@ export const DIFF_DEADLINE_MS = 20
 // A long pass of the diff looks at the clock this often, not only between passes
 export const DIFF_CLOCK_CHECK_EVERY = 256
 
+// The agent's recap in the status bar tooltip: one line, cut here
+export const RECAP_TOOLTIP_MAX_CHARS = 120
+
 // Which files the extension keeps a copy of (the last version it sent), so a save can be line-diffed
 export const MAX_TRACKED_FILES = 100
 export const MAX_TRACKED_FILE_CHARS = 1_000_000

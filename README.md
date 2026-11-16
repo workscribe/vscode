@@ -8,7 +8,7 @@ This extension captures what happens *in the editor* — file saves, debug sessi
 
 ## What it captures
 
-- **File saves** — every save of an on-disk file
+- **File saves** — every save of an on-disk file, with how many lines it added and removed (needs Workscribe CLI 3.3.0 or later; an older CLI still gets the save, without the counts)
 - **Debug sessions** — start and end of each debug session
 - **Tasks** — build, test and watch tasks run through VS Code's task runner, captured when a task ends
 
@@ -19,6 +19,7 @@ None of this is sent anywhere by this extension. Every event is handed to the `w
 When you open a file you last worked on more than a day ago, the status bar shows **WS · 25 days ago**. Point-of-need recall for "what was I doing here", without digging through git log. Files you worked on today show nothing: the point is surfacing context you've lost, not restating what you just did.
 
 - **Hover it** for what Workscribe knows about the file: when it last changed, how many changes were recorded (one per file per 30 seconds), its branch, the commits that touched it, and the start of that session's summary. You can move into the tooltip without it closing.
+- **Who changed it:** with Workscribe CLI 3.3.0 or later, the tooltip says who changed the file and by how many lines (*4 saves in your editor (+10 −2), 2 edits by Claude Code (+87 −12)*), and, when you keep the agent's recaps (`capture.agentMessages`), what each coding agent said it did. With an older CLI it only says how many changes were recorded.
 - **Worked alongside:** with a Workscribe CLI that works in threads (3.0 and later, once its data is upgraded), the tooltip is about the file's own project. If you were working in other repos in the same stretch, it names them: **Worked alongside** workscribe/cli, workscribe/vscode.
 - **Click it**, or **Open session in Workscribe** in the tooltip, to open that session in the Workscribe tab.
 - The first time it appears, a one-time hint explains it.
@@ -27,7 +28,7 @@ It asks the CLI again whenever you switch to a file or save it, so it never show
 
 ## Workscribe tab
 
-The **Workscribe** panel, next to Problems, Output and Terminal, shows the whole session the active file was last worked in: the repo, when it ran, its branch, how many events it had, and its full summary. With a CLI that works in threads (3.0 and later), it also shows how long the file's project was active, and lists every project worked alongside it, with when and for how long. Unlike the status bar item, it shows the latest session even if it was today. When there's nothing to show, it says why: Restricted Mode, the CLI not found, or no activity recorded for the file yet.
+The **Workscribe** panel, next to Problems, Output and Terminal, shows the whole session the active file was last worked in: the repo, when it ran, its branch, how many events it had, and its full summary. With a CLI that works in threads (3.0 and later), it also shows how long the file's project was active, and lists every project worked alongside it, with when and for how long. With CLI 3.3.0 or later it adds **Who changed this file**, you and each coding agent with their changes and lines, and the full recap of each agent session that edited the file. Unlike the status bar item, it shows the latest session even if it was today. When there's nothing to show, it says why: Restricted Mode, the CLI not found, or no activity recorded for the file yet.
 
 ## Output channel
 

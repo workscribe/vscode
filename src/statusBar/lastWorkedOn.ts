@@ -1,8 +1,15 @@
 // What the "last worked on" status bar item says: its text, its spoken label and its tooltip. Pure — no `vscode` —
 // so it's tested directly; statusBar.ts turns the markdown into a MarkdownString.
 
-import { type FileDetails, type SessionContext, threadOf } from '../cli/context'
-import { SHOW_SESSION_COMMAND } from '../constants'
+import {
+  type FileChangedBy,
+  type FileChanges,
+  type FileDetails,
+  fileChangesOf,
+  type SessionContext,
+  threadOf,
+} from '../cli/context'
+import { RECAP_TOOLTIP_MAX_CHARS, SHOW_SESSION_COMMAND } from '../constants'
 import { formatDayAndTime } from '../shared/sessionTime'
 
 const MAX_TOOLTIP_COMMITS = 3
@@ -50,14 +57,66 @@ export function showSessionLink(filePath: string): string {
   return `command:${SHOW_SESSION_COMMAND}?${encodeURIComponent(JSON.stringify([filePath]))}`
 }
 
-function fileSection(file: FileDetails): string[] {
+/** " (+87 −12)", or nothing when the counts aren't known. */
+function linesSuffix({ linesAdded, linesRemoved }: Pick<FileChangedBy, 'linesAdded' | 'linesRemoved'>): string {
+  return linesAdded === null || linesRemoved === null ? '' : ` (+${linesAdded} \u2212${linesRemoved})`
+}
+
+function countOf(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? '' : 's'}`
+}
+
+/** "4 saves in your editor (+10 −2)" or "2 edits by Claude Code (+87 −12)". */
+function changedByPhrase(who: FileChangedBy): string {
+  if (who.agent === null) return `${countOf(who.count, 'save')} in your editor${linesSuffix(who)}`
+  return `${countOf(who.count, 'edit')} by ${escapeMarkdown(who.agent)}${linesSuffix(who)}`
+}
+
+/** The counts alone, for an answer whose `changedBy` had nothing usable: "4 saves in your editor, 2 edits by an agent". */
+function changesFromCounts({ editorSaves, agentEdits }: FileChanges): string[] {
+  return [
+    ...(editorSaves > 0 ? [`${countOf(editorSaves, 'save')} in your editor`] : []),
+    ...(agentEdits > 0 ? [`${countOf(agentEdits, 'edit')} by a coding agent`] : []),
+  ]
+}
+
+/** What changed the file, in phrases: who and how much with a CLI that says (3.3+), else only the counts. */
+function changePhrases(changes: FileChanges | null): string[] {
+  if (!changes) return []
+  if (changes.changedBy.length === 0) return changesFromCounts(changes)
+  return changes.changedBy.map(changedByPhrase)
+}
+
+function changesFact(file: FileDetails, changes: FileChanges | null): string {
+  const phrases = changePhrases(changes)
+  if (phrases.length > 0) return `- Changes: ${phrases.join(', ')}`
+  // Capture keeps one change per file per 30 s, so this isn't every keystroke save
+  return `- Changes recorded: ${file.saveCount} (one per file per 30 s)`
+}
+
+function fileSection(file: FileDetails, changes: FileChanges | null): string[] {
   const facts = [
     `- Last changed: ${escapeMarkdown(formatDayAndTime(file.lastSavedAt))}`,
-    // Capture keeps one change per file per 30 s, so this isn't every keystroke save
-    `- Changes recorded: ${file.saveCount} (one per file per 30 s)`,
+    changesFact(file, changes),
     ...(file.branch ? [`- Branch: ${escapeMarkdown(file.branch)}`] : []),
   ]
   return ['**About this file**', ...facts]
+}
+
+/** A recap as one short line: its whitespace collapsed, and cut with an ellipsis when it is longer than the limit. */
+function recapLine(recap: string): string {
+  const oneLine = recap.replace(/\s+/g, ' ').trim()
+  if (oneLine.length <= RECAP_TOOLTIP_MAX_CHARS) return oneLine
+  return `${oneLine.slice(0, RECAP_TOOLTIP_MAX_CHARS - 1).trimEnd()}\u2026`
+}
+
+/** What each agent session that edited the file said it did; nothing when none kept a recap. */
+function agentSaidSection(changes: FileChanges | null): string[] {
+  const recaps = (changes?.agentSessions ?? []).flatMap((agentSession) => {
+    const line = agentSession.recap === null ? '' : recapLine(agentSession.recap)
+    return line === '' ? [] : [`- ${escapeMarkdown(agentSession.agent ?? 'An agent')}: ${escapeMarkdown(line)}`]
+  })
+  return recaps.length === 0 ? [] : ['**What the agent said**', ...recaps]
 }
 
 function commitsSection(file: FileDetails): string[] {
@@ -95,9 +154,11 @@ function alongsideSection(session: SessionContext): string[] {
  * so the tooltip is the session part alone.
  */
 export function tooltipMarkdown(session: SessionContext, filePath: string): string {
+  const changes = session.file ? fileChangesOf(session.file) : null
   const sections = [
     [`**Workscribe** · you last worked on this file ${escapeMarkdown(session.timeAgo)}`],
-    ...(session.file ? [fileSection(session.file), commitsSection(session.file)] : []),
+    ...(session.file ? [fileSection(session.file, changes), commitsSection(session.file)] : []),
+    agentSaidSection(changes),
     sessionSection(session.summary),
     alongsideSection(session),
     [`[Open session in Workscribe](${showSessionLink(filePath)})`],
