@@ -39,21 +39,51 @@ suite('SaveSnapshots', () => {
   test('keeps the snapshot while you type, so the save counts everything typed since the last version', () => {
     snapshots.track(FILE, 'a\nb\n')
 
-    snapshots.documentChanged({ path: FILE, text: 'a\nb\nc\n', changeCount: 1, isDirty: true })
+    snapshots.documentChanged({ path: FILE, readText: () => 'a\nb\nc\n', changeCount: 1, isDirty: true })
 
     assert.deepStrictEqual(snapshots.countsOnSave(FILE, 'a\nb\nc\nd\n'), { linesAdded: 2, linesRemoved: 0 })
   })
 
+  test('does not read the text while you type', () => {
+    snapshots.track(FILE, 'a\n')
+
+    snapshots.documentChanged({
+      path: FILE,
+      readText: () => assert.fail('typing should not read the document'),
+      changeCount: 1,
+      isDirty: true,
+    })
+  })
+
   test('does not start tracking a file from a typing event', () => {
-    snapshots.documentChanged({ path: FILE, text: 'a\nb\n', changeCount: 1, isDirty: true })
+    snapshots.documentChanged({ path: FILE, readText: () => 'a\nb\n', changeCount: 1, isDirty: true })
 
     assert.strictEqual(snapshots.countsOnSave(FILE, 'a\nb\nc\n'), null)
   })
 
-  test('takes the new text after an outside change, so the save counts only what was typed after it', () => {
+  test('keeps the snapshot for the first edit after a save, which VS Code reports before it flags the dirty', () => {
     snapshots.track(FILE, 'a\nb\n')
 
-    snapshots.documentChanged({ path: FILE, text: 'x\ny\n', changeCount: 1, isDirty: false })
+    snapshots.documentChanged({ path: FILE, readText: () => 'a\nb\nc\n', changeCount: 1, isDirty: false })
+    snapshots.documentChanged({ path: FILE, readText: () => assert.fail('unread'), changeCount: 0, isDirty: true })
+
+    assert.deepStrictEqual(snapshots.countsOnSave(FILE, 'a\nb\nc\nd\n'), { linesAdded: 2, linesRemoved: 0 })
+  })
+
+  test('counts the first edit after a save when the save comes before the dirty event', () => {
+    snapshots.track(FILE, 'a\nb\n')
+
+    snapshots.documentChanged({ path: FILE, readText: () => 'a\nb\nc\n', changeCount: 1, isDirty: false })
+
+    assert.deepStrictEqual(snapshots.countsOnSave(FILE, 'a\nb\nc\n'), { linesAdded: 1, linesRemoved: 0 })
+  })
+
+  test('takes the text of an outside change, so the save counts only what was typed after it', () => {
+    snapshots.track(FILE, 'a\nb\n')
+    snapshots.documentChanged({ path: FILE, readText: () => 'x\ny\n', changeCount: 1, isDirty: false })
+
+    snapshots.documentChanged({ path: FILE, readText: () => 'x\ny\nz\n', changeCount: 1, isDirty: false })
+    snapshots.documentChanged({ path: FILE, readText: () => assert.fail('unread'), changeCount: 0, isDirty: true })
 
     assert.deepStrictEqual(snapshots.countsOnSave(FILE, 'x\ny\nz\n'), { linesAdded: 1, linesRemoved: 0 })
   })
@@ -61,9 +91,18 @@ suite('SaveSnapshots', () => {
   test('leaves the snapshot alone for the empty change event around a save', () => {
     snapshots.track(FILE, 'a\nb\n')
 
-    snapshots.documentChanged({ path: FILE, text: 'a\nb\nc\n', changeCount: 0, isDirty: false })
+    snapshots.documentChanged({ path: FILE, readText: () => 'a\nb\nc\n', changeCount: 0, isDirty: false })
 
     assert.deepStrictEqual(snapshots.countsOnSave(FILE, 'a\nb\nc\n'), { linesAdded: 1, linesRemoved: 0 })
+  })
+
+  test('drops a change held as clean when the file is closed, so a closed file keeps no snapshot', () => {
+    snapshots.track(FILE, 'a\n')
+    snapshots.documentChanged({ path: FILE, readText: () => 'x\n', changeCount: 1, isDirty: false })
+
+    snapshots.forget(FILE)
+
+    assert.strictEqual(snapshots.countsOnSave(FILE, 'x\ny\n'), null)
   })
 
   test('sends no counts for a binary file', () => {
@@ -101,7 +140,7 @@ suite('SaveSnapshots', () => {
 
   test('evicts the least recently used file past the limit, and a file used again just before stays', () => {
     for (let index = 0; index < MAX_TRACKED_FILES; index++) snapshots.track(`/work/file${index}.ts`, 'a\n')
-    snapshots.documentChanged({ path: '/work/file0.ts', text: 'a\nb\n', changeCount: 1, isDirty: true })
+    snapshots.documentChanged({ path: '/work/file0.ts', readText: () => 'a\nb\n', changeCount: 1, isDirty: true })
 
     snapshots.track('/work/one-more.ts', 'a\n')
 

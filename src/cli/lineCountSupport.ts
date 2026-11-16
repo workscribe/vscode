@@ -2,6 +2,7 @@
 // before 3.3.0 rejects options it doesn't know, so sending it the flags would lose the whole save.
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
+import type { LineCounts } from '../capture/lineDiff'
 import { SUPPORT_PROBE_TIMEOUT_MS, SUPPORT_RETRY_MS } from '../constants'
 
 const execFileAsync = promisify(execFile)
@@ -14,6 +15,12 @@ function listsFlag(helpText: string, flag: string): boolean {
 /** Whether `_capture --help` lists both line-count flags. */
 export function listsLineCountFlags(helpText: string): boolean {
   return listsFlag(helpText, '--lines-added') && listsFlag(helpText, '--lines-removed')
+}
+
+/** The `_capture` arguments for a save's line counts; none when they aren't known. */
+export function lineCountArgs(counts: LineCounts | null): string[] {
+  if (!counts) return []
+  return ['--lines-added', String(counts.linesAdded), '--lines-removed', String(counts.linesRemoved)]
 }
 
 async function readCaptureHelp(binaryPath: string): Promise<string> {

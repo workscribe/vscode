@@ -1,7 +1,7 @@
 import * as assert from 'node:assert'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { LineCountSupport, listsLineCountFlags } from '../../../src/cli/lineCountSupport'
+import { LineCountSupport, lineCountArgs, listsLineCountFlags } from '../../../src/cli/lineCountSupport'
 import { SUPPORT_RETRY_MS } from '../../../src/constants'
 
 // The compiled tests run from out/test/suite/cli
@@ -30,6 +30,21 @@ suite('listsLineCountFlags', () => {
     const help = '  --lines-added [count]  lines a code_edit added\n'
 
     assert.strictEqual(listsLineCountFlags(help), false)
+  })
+})
+
+suite('lineCountArgs', () => {
+  test('passes both counts, as text', () => {
+    assert.deepStrictEqual(lineCountArgs({ linesAdded: 3, linesRemoved: 0 }), [
+      '--lines-added',
+      '3',
+      '--lines-removed',
+      '0',
+    ])
+  })
+
+  test('passes nothing when the counts are not known', () => {
+    assert.deepStrictEqual(lineCountArgs(null), [])
   })
 })
 
