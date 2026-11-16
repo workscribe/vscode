@@ -4,7 +4,14 @@
 // what renderSummary builds from a known shape (## headings, - bullets, `code`). The page runs no scripts; its
 // links are command links VS Code allows by name (see sessionTab.ts).
 import path from 'node:path'
-import { type AlongsideThread, type SessionContext, threadOf } from '../cli/context'
+import {
+  type AlongsideThread,
+  type FileChangedBy,
+  type FileChanges,
+  fileChangesOf,
+  type SessionContext,
+  threadOf,
+} from '../cli/context'
 import { BINARY_PATH_SETTING, MANAGE_TRUST_COMMAND, OPEN_SETTINGS_COMMAND } from '../constants'
 import { formatSessionDuration, formatSessionSpan } from '../shared/sessionTime'
 import type { CliState } from './sessionTabController'
@@ -92,6 +99,51 @@ function renderAlongside(alongside: AlongsideThread[]): string[] {
   ]
 }
 
+function countOf(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? '' : 's'}`
+}
+
+/** One source's changes to the file: who, how many, and how many lines when the CLI knew. */
+function renderChangedBy(who: FileChangedBy): string {
+  const name = who.agent ?? 'You'
+  const lines =
+    who.linesAdded === null || who.linesRemoved === null ? null : `+${who.linesAdded} \u2212${who.linesRemoved}`
+  const facts = [countOf(who.count, who.agent === null ? 'save' : 'edit'), lines].filter(
+    (fact): fact is string => fact !== null,
+  )
+  return `<li><strong>${escapeHtml(name)}</strong> · ${facts.map(escapeHtml).join(' · ')}</li>`
+}
+
+/** Who changed the file (CLI 3.3+) and what each agent session said it did; nothing from an older CLI. */
+function renderChanges(changes: FileChanges | null): string[] {
+  if (!changes) return []
+  const recaps = changes.agentSessions.flatMap((agentSession) =>
+    agentSession.recap
+      ? [
+          '<div class="recap">',
+          `<p class="recap-title"><strong>${escapeHtml(agentSession.agent ?? 'An agent')}</strong> · ${escapeHtml(formatSessionSpan(agentSession.startedAt, agentSession.endedAt ?? agentSession.startedAt))}</p>`,
+          `<p class="recap-text">${escapeHtml(agentSession.recap)}</p>`,
+          '</div>',
+        ]
+      : [],
+  )
+  return [
+    ...(changes.changedBy.length === 0
+      ? []
+      : [
+          '<section class="changes">',
+          '<h3>Who changed this file</h3>',
+          '<ul>',
+          ...changes.changedBy.map(renderChangedBy),
+          '</ul>',
+          '</section>',
+        ]),
+    ...(recaps.length === 0
+      ? []
+      : ['<section class="recaps">', '<h3>What the agent said</h3>', ...recaps, '</section>']),
+  ]
+}
+
 function renderSessionBody(session: SessionContext, filePath: string): string {
   const thread = threadOf(session)
   const facts = [
@@ -110,6 +162,7 @@ function renderSessionBody(session: SessionContext, filePath: string): string {
     session.summary
       ? `<section class="summary">${renderSummary(session.summary)}</section>`
       : renderMessage('No summary yet.'),
+    ...renderChanges(session.file ? fileChangesOf(session.file) : null),
     ...renderAlongside(thread?.alongside ?? []),
   ].join('\n')
 }
@@ -159,6 +212,9 @@ h3 { font-size: 1em; margin: 12px 0 4px; }
 .facts, .subtitle, .message { color: var(--vscode-descriptionForeground); margin: 2px 0; }
 .message { margin-top: 12px; }
 ul { margin: 4px 0; padding-left: 20px; }
+.recap { margin: 6px 0; }
+.recap-title { margin: 0; color: var(--vscode-descriptionForeground); }
+.recap-text { margin: 2px 0 0; white-space: pre-wrap; }
 code { font-family: var(--vscode-editor-font-family); background: var(--vscode-textCodeBlock-background); padding: 0 3px; border-radius: 3px; }
 a { color: var(--vscode-textLink-foreground); }
 a:hover { color: var(--vscode-textLink-activeForeground); }

@@ -17,6 +17,43 @@ export interface FileDetails {
   branch: string | null
   commits: { hash: string; subject: string }[]
   editedAlongside: { files: string[]; total: number }
+  /** CLI 3.3+: of those saves, the ones made in the editor and the ones a coding agent made */
+  editorSaves?: number
+  agentEdits?: number
+  /** CLI 3.3+: the sum of the known line counts of all its edits; null when none had counts */
+  linesAdded?: number | null
+  linesRemoved?: number | null
+  /** CLI 3.3+: who changed it, one entry per source */
+  changedBy?: FileChangedBy[]
+  /** CLI 3.3+: the agent conversations that edited it. A recap appears only while the user keeps capture.agentMessages on */
+  agentSessions?: FileAgentSession[]
+}
+
+export interface FileChangedBy {
+  source: string | null
+  /** The agent's name ("Claude Code"); null for the editor */
+  agent: string | null
+  count: number
+  linesAdded: number | null
+  linesRemoved: number | null
+}
+
+export interface FileAgentSession {
+  source: string
+  agent: string | null
+  startedAt: string
+  endedAt: string | null
+  recap: string | null
+}
+
+/** Who changed a file, once checked: what the tooltip and the tab show beyond "N changes". */
+export interface FileChanges {
+  editorSaves: number
+  agentEdits: number
+  linesAdded: number | null
+  linesRemoved: number | null
+  changedBy: FileChangedBy[]
+  agentSessions: FileAgentSession[]
 }
 
 export interface SessionContext {
@@ -92,6 +129,71 @@ export function threadOf(session: SessionContext): ThreadView | null {
   if (typeof activeMinutes !== 'number') return null
   const alongside = Array.isArray(session.alongside) ? session.alongside.filter(isAlongsideThread) : []
   return { activeMinutes, alongside }
+}
+
+type Fields = Record<string, unknown>
+
+function isRecord(value: unknown): value is Fields {
+  return typeof value === 'object' && value !== null
+}
+
+function isStringOrNull(value: unknown): value is string | null {
+  return value === null || typeof value === 'string'
+}
+
+function lineCountOrNull(value: unknown): number | null {
+  return typeof value === 'number' ? value : null
+}
+
+/** An entry of `changedBy`; one without a count, or with a source or agent that isn't a string or null, is dropped. */
+function changedByOf(value: unknown): FileChangedBy[] {
+  if (!isRecord(value)) return []
+  const entry = value
+  if (typeof entry.count !== 'number' || !isStringOrNull(entry.source) || !isStringOrNull(entry.agent)) return []
+  return [
+    {
+      source: entry.source,
+      agent: entry.agent,
+      count: entry.count,
+      linesAdded: lineCountOrNull(entry.linesAdded),
+      linesRemoved: lineCountOrNull(entry.linesRemoved),
+    },
+  ]
+}
+
+/** An entry of `agentSessions`; one without a start, or whose recap isn't text or null, is dropped. */
+function agentSessionOf(value: unknown): FileAgentSession[] {
+  if (!isRecord(value)) return []
+  const entry = value
+  if (typeof entry.source !== 'string' || typeof entry.startedAt !== 'string') return []
+  if (!isStringOrNull(entry.agent) || !isStringOrNull(entry.recap)) return []
+  return [
+    {
+      source: entry.source,
+      agent: entry.agent,
+      startedAt: entry.startedAt,
+      endedAt: typeof entry.endedAt === 'string' ? entry.endedAt : null,
+      recap: entry.recap,
+    },
+  ]
+}
+
+/**
+ * Who changed the file, checked before anything shows it. Null from a CLI before 3.3, which sends none of the new
+ * fields, and then the tooltip and the tab look as they did in 0.3.0. From a CLI that sends them, a view, even for a
+ * file no agent touched; an entry that isn't well formed is dropped.
+ */
+export function fileChangesOf(file: FileDetails): FileChanges | null {
+  const { editorSaves, agentEdits } = file
+  if (typeof editorSaves !== 'number' || typeof agentEdits !== 'number') return null
+  return {
+    editorSaves,
+    agentEdits,
+    linesAdded: lineCountOrNull(file.linesAdded),
+    linesRemoved: lineCountOrNull(file.linesRemoved),
+    changedBy: Array.isArray(file.changedBy) ? file.changedBy.flatMap(changedByOf) : [],
+    agentSessions: Array.isArray(file.agentSessions) ? file.agentSessions.flatMap(agentSessionOf) : [],
+  }
 }
 
 /** A `context --file` answer: a session, nothing recorded for the file, or no usable answer from the CLI. */

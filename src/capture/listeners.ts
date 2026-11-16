@@ -3,6 +3,8 @@ import * as vscode from 'vscode'
 import type { ActivityLog } from '../activityLog/activityLog'
 import type { CaptureEventType } from '../activityLog/activityLogLine'
 import { spawnCapture } from '../cli/capture'
+import { lineCountArgs, lineCountSupport } from '../cli/lineCountSupport'
+import { SaveSnapshots } from './saveSnapshots'
 
 /**
  * Only real, on-disk documents represent a meaningful code_edit event.
@@ -38,6 +40,35 @@ function resolveCwdForTaskScope(scope: vscode.WorkspaceFolder | vscode.TaskScope
 }
 
 /**
+ * Keeps, for each open file, the last version sent, so a save can say how many lines it changed. A document that is
+ * dirty when seen (unsaved changes restored from a session) isn't kept: its text isn't a version the CLI has seen, so
+ * the first save sends no counts rather than wrong ones.
+ */
+function trackOpenDocuments(context: vscode.ExtensionContext, snapshots: SaveSnapshots): void {
+  const seed = (document: vscode.TextDocument) => {
+    if (!isCapturableDocument(document) || document.isDirty) return
+    snapshots.track(document.uri.fsPath, document.getText())
+  }
+  for (const document of vscode.workspace.textDocuments) seed(document)
+
+  context.subscriptions.push(
+    vscode.workspace.onDidOpenTextDocument(seed),
+    vscode.workspace.onDidCloseTextDocument((document) => {
+      if (isCapturableDocument(document)) snapshots.forget(document.uri.fsPath)
+    }),
+    vscode.workspace.onDidChangeTextDocument(({ document, contentChanges }) => {
+      if (!isCapturableDocument(document)) return
+      snapshots.documentChanged({
+        path: document.uri.fsPath,
+        readText: () => document.getText(),
+        changeCount: contentChanges.length,
+        isDirty: document.isDirty,
+      })
+    }),
+  )
+}
+
+/**
  * Sends each editor event to `workscribe _capture`, and notes it in the Workscribe Output channel. `target` is
  * what the log shows: the saved file, or the folder for debug sessions and tasks.
  */
@@ -46,12 +77,18 @@ export function registerListeners(context: vscode.ExtensionContext, binaryPath: 
     spawnCapture(binaryPath, ['--type', type, ...args, '--source', 'vscode'])
     log.sent(type, target)
   }
+  const snapshots = new SaveSnapshots()
+  trackOpenDocuments(context, snapshots)
 
   context.subscriptions.push(
-    vscode.workspace.onDidSaveTextDocument((document) => {
+    vscode.workspace.onDidSaveTextDocument(async (document) => {
       if (!isCapturableDocument(document)) return
-      const cwd = resolveCwdForUri(document.uri)
-      capture('code_edit', document.uri.fsPath, ['--file', document.uri.fsPath, '--cwd', cwd])
+      const filePath = document.uri.fsPath
+      // Counted, and the snapshot moved on, before anything is awaited: a slow check of the CLI can't let the next
+      // edit slip into this save's counts
+      const counts = snapshots.countsOnSave(filePath, document.getText())
+      const countArgs = counts && (await lineCountSupport.supports(binaryPath)) ? lineCountArgs(counts) : []
+      capture('code_edit', filePath, ['--file', filePath, '--cwd', resolveCwdForUri(document.uri), ...countArgs])
     }),
 
     vscode.debug.onDidStartDebugSession((session) => {

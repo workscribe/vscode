@@ -1,10 +1,29 @@
 import * as assert from 'node:assert'
-import type { SessionContext } from '../../../src/cli/context'
+import type { FileDetails, SessionContext } from '../../../src/cli/context'
 import { escapeHtml, renderSummary, sessionTabHtml, type TabState } from '../../../src/sessionTab/sessionTabHtml'
 import { formatSessionSpan } from '../../../src/shared/sessionTime'
-import { CLI_ALONGSIDE, ON_A_THREAD, ON_A_THREAD_ALONE } from '../threadFixtures'
+import {
+  CLI_ALONGSIDE,
+  FILE_AGENT_NO_RECAP,
+  FILE_EDITOR_ONLY,
+  FILE_MALFORMED_CHANGES,
+  FILE_WITH_AGENT_AND_RECAP,
+  ON_A_THREAD,
+  ON_A_THREAD_ALONE,
+} from '../threadFixtures'
 
 const NONCE = 'test-nonce'
+
+const FILE_DETAILS: FileDetails = {
+  path: '/Users/dev/api/README.md',
+  relativePath: 'README.md',
+  firstSavedAt: '2026-10-28T09:12:00.000Z',
+  lastSavedAt: '2026-10-28T10:30:00.000Z',
+  saveCount: 3,
+  branch: 'main',
+  commits: [],
+  editedAlongside: { files: [], total: 0 },
+}
 
 function session(overrides: Partial<SessionContext> = {}): SessionContext {
   return {
@@ -17,16 +36,7 @@ function session(overrides: Partial<SessionContext> = {}): SessionContext {
     branch: 'main',
     eventCount: 12,
     summary: '## api (main) — 1h 30m\n- Fixed the token refresh race (a1b2c3d)\n- Added tests',
-    file: {
-      path: '/Users/dev/api/README.md',
-      relativePath: 'README.md',
-      firstSavedAt: '2026-10-28T09:12:00.000Z',
-      lastSavedAt: '2026-10-28T10:30:00.000Z',
-      saveCount: 3,
-      branch: 'main',
-      commits: [],
-      editedAlongside: { files: [], total: 0 },
-    },
+    file: FILE_DETAILS,
     ...overrides,
   }
 }
@@ -192,5 +202,78 @@ suite('sessionTabHtml — the page', () => {
     const html = page({ kind: 'no-cli' })
     const encodedArgument = encodeURIComponent(JSON.stringify(['workscribe.binaryPath']))
     assert.ok(html.includes(`command:workbench.action.openSettings?${encodedArgument}`))
+  })
+})
+
+suite('sessionTabHtml: who changed the file', () => {
+  const pageWithChanges = (changes: object) =>
+    page({
+      kind: 'session',
+      session: session({ file: { ...FILE_DETAILS, ...changes } }),
+      filePath: '/Users/dev/api/README.md',
+    })
+
+  test('lists you and each agent with how many changes and lines', () => {
+    const html = pageWithChanges(FILE_WITH_AGENT_AND_RECAP)
+
+    assert.ok(html.includes('<h3>Who changed this file</h3>'))
+    assert.ok(html.includes('<li><strong>You</strong> · 4 saves · +10 \u22122</li>'))
+    assert.ok(html.includes('<li><strong>Claude Code</strong> · 2 edits · +87 \u221212</li>'))
+  })
+
+  test('shows what the agent said in full, after the summary', () => {
+    const html = pageWithChanges(FILE_WITH_AGENT_AND_RECAP)
+
+    assert.ok(html.includes('<h3>What the agent said</h3>'))
+    assert.ok(html.includes('<p class="recap-text">Added token refresh to the auth middleware</p>'))
+    assert.ok(html.indexOf('class="summary"') < html.indexOf('Who changed this file'))
+  })
+
+  test('does not cut a long recap', () => {
+    const recap = `${'word '.repeat(100)}end`
+
+    const html = pageWithChanges({
+      ...FILE_WITH_AGENT_AND_RECAP,
+      agentSessions: [{ ...FILE_WITH_AGENT_AND_RECAP.agentSessions?.[0], recap }],
+    })
+
+    assert.ok(html.includes(`${recap}</p>`))
+  })
+
+  test('shows no recap section when only you changed the file', () => {
+    const html = pageWithChanges(FILE_EDITOR_ONLY)
+
+    assert.ok(html.includes('<li><strong>You</strong> · 4 saves · +10 \u22122</li>'))
+    assert.ok(!html.includes('What the agent said'))
+  })
+
+  test('shows no recap section when the agent kept none', () => {
+    const html = pageWithChanges(FILE_AGENT_NO_RECAP)
+
+    assert.ok(html.includes('<strong>Claude Code</strong>'))
+    assert.ok(!html.includes('What the agent said'))
+  })
+
+  test('escapes every value, and drops entries that are not well formed', () => {
+    const html = pageWithChanges(FILE_MALFORMED_CHANGES)
+
+    assert.ok(!html.includes('<script>'))
+    assert.ok(!html.includes('<b>Cursor</b>'))
+    assert.ok(html.includes('&lt;script&gt;alert(1)&lt;/script&gt;'))
+    assert.ok(html.includes('&lt;b&gt;Cursor&lt;/b&gt;'))
+  })
+
+  test('is exactly as before with a CLI before 3.3, which sends none of the new fields', () => {
+    const html = page({ kind: 'session', session: session(), filePath: '/Users/dev/api/README.md' })
+
+    assert.ok(!html.includes('Who changed this file'))
+    assert.ok(!html.includes('What the agent said'))
+  })
+
+  test('still locks the page down: no inline styles, and scripts only with the nonce', () => {
+    const html = pageWithChanges(FILE_WITH_AGENT_AND_RECAP)
+
+    assert.ok(!/ style="/.test(html))
+    assert.ok(!html.includes('<script'))
   })
 })

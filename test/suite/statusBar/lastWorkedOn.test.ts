@@ -1,5 +1,6 @@
 import * as assert from 'node:assert'
 import type { SessionContext } from '../../../src/cli/context'
+import { RECAP_TOOLTIP_MAX_CHARS } from '../../../src/constants'
 import {
   accessibilityLabel,
   escapeMarkdown,
@@ -8,7 +9,16 @@ import {
   statusText,
   tooltipMarkdown,
 } from '../../../src/statusBar/lastWorkedOn'
-import { CLI_ALONGSIDE, ON_A_THREAD, ON_A_THREAD_ALONE } from '../threadFixtures'
+import {
+  CLI_ALONGSIDE,
+  FILE_AGENT_NO_RECAP,
+  FILE_AGENT_ONLY,
+  FILE_EDITOR_ONLY,
+  FILE_MALFORMED_CHANGES,
+  FILE_WITH_AGENT_AND_RECAP,
+  ON_A_THREAD,
+  ON_A_THREAD_ALONE,
+} from '../threadFixtures'
 
 const FILE = '/Users/dev/api/src/auth.ts'
 
@@ -185,5 +195,104 @@ suite('tooltipMarkdown', () => {
       before,
     )
     assert.ok(!before.includes('Worked alongside'))
+  })
+})
+
+suite('tooltipMarkdown: who changed the file', () => {
+  const withChanges = (changes: object) => tooltipMarkdown(session({ file: { ...FILE_DETAILS, ...changes } }), FILE)
+
+  test('says who changed the file and by how many lines, in place of "Changes recorded"', () => {
+    const markdown = withChanges(FILE_WITH_AGENT_AND_RECAP)
+
+    assert.ok(
+      markdown.includes('- Changes: 4 saves in your editor (+10 \u22122), 2 edits by Claude Code (+87 \u221212)'),
+    )
+    assert.ok(!markdown.includes('Changes recorded'))
+  })
+
+  test('shows what the agent said, after the commits and before the session', () => {
+    const markdown = withChanges(FILE_WITH_AGENT_AND_RECAP)
+
+    assert.ok(markdown.includes('**What the agent said**\n- Claude Code: Added token refresh to the auth middleware'))
+    assert.ok(markdown.indexOf('**Commits**') < markdown.indexOf('**What the agent said**'))
+    assert.ok(markdown.indexOf('**What the agent said**') < markdown.indexOf('**From the session**'))
+  })
+
+  test('names only you when only you changed the file, with no section for the agent', () => {
+    const markdown = withChanges(FILE_EDITOR_ONLY)
+
+    assert.ok(markdown.includes('- Changes: 4 saves in your editor (+10 \u22122)\n'))
+    assert.ok(!markdown.includes('What the agent said'))
+  })
+
+  test('names only the agent when only an agent changed the file', () => {
+    assert.ok(withChanges(FILE_AGENT_ONLY).includes('- Changes: 2 edits by Claude Code (+87 \u221212)\n'))
+  })
+
+  test('has no "What the agent said" section when no recap was kept', () => {
+    const markdown = withChanges(FILE_AGENT_NO_RECAP)
+
+    assert.ok(markdown.includes('2 edits by Claude Code'))
+    assert.ok(!markdown.includes('What the agent said'))
+  })
+
+  test('says "1 save" and "1 edit", and leaves out line counts that are not known', () => {
+    const markdown = withChanges({
+      ...FILE_EDITOR_ONLY,
+      changedBy: [{ source: 'vscode', agent: null, count: 1, linesAdded: null, linesRemoved: null }],
+    })
+
+    assert.ok(markdown.includes('- Changes: 1 save in your editor\n'))
+  })
+
+  test('shows a recap as one line, cut with an ellipsis at the limit', () => {
+    const recap = `${'word '.repeat(60)}\nsecond line`
+
+    const markdown = withChanges({
+      ...FILE_AGENT_ONLY,
+      agentSessions: [{ ...FILE_AGENT_ONLY.agentSessions?.[0], recap }],
+    })
+
+    const shown = markdown.split('\n').find((line) => line.startsWith('- Claude Code: ')) ?? ''
+    assert.ok(shown.endsWith('\\\u2026') === false && shown.endsWith('\u2026'))
+    assert.ok(shown.length - '- Claude Code: '.length <= RECAP_TOOLTIP_MAX_CHARS)
+    assert.ok(!shown.includes('second line'))
+  })
+
+  test('escapes a recap, so it cannot add links or formatting', () => {
+    const markdown = withChanges({
+      ...FILE_AGENT_ONLY,
+      agentSessions: [{ ...FILE_AGENT_ONLY.agentSessions?.[0], recap: 'Fixed *bold* [x](http://evil)\nand `code`' }],
+    })
+
+    assert.ok(markdown.includes('- Claude Code: Fixed \\*bold\\* \\[x\\]\\(http://evil\\) and \\`code\\`'))
+  })
+
+  test('escapes the agent names, and drops entries that are not well formed', () => {
+    const markdown = withChanges(FILE_MALFORMED_CHANGES)
+
+    assert.ok(markdown.includes('1 edit by \\<script\\>alert\\(1\\)\\</script\\> (+3 \u22121)'))
+    assert.ok(!markdown.includes('<script>'))
+    assert.ok(!markdown.includes('<b>'))
+  })
+
+  test('falls back to the counts when the CLI sent the fields but none of its entries were usable', () => {
+    const markdown = withChanges({ ...FILE_WITH_AGENT_AND_RECAP, changedBy: [] })
+
+    assert.ok(markdown.includes('- Changes: 4 saves in your editor, 2 edits by a coding agent\n'))
+    assert.ok(!markdown.includes('Changes recorded'))
+  })
+
+  test('says how many changes were recorded when the CLI sent the fields but there was nothing to count', () => {
+    const markdown = withChanges({ ...FILE_EDITOR_ONLY, editorSaves: 0, changedBy: [] })
+
+    assert.ok(markdown.includes('- Changes recorded: 6 (one per file per 30 s)'))
+  })
+
+  test('is exactly as before with a CLI before 3.3, which sends none of the new fields', () => {
+    const markdown = tooltipMarkdown(session({ file: FILE_DETAILS }), FILE)
+
+    assert.ok(markdown.includes('- Changes recorded: 6 (one per file per 30 s)'))
+    assert.ok(!markdown.includes('What the agent said'))
   })
 })
