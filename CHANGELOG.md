@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
 
 - **Line counts on saves:** with Workscribe CLI 3.3.0 or later, each save also tells the CLI how many lines it
   added and removed, worked out against the last version of the file the extension sent. Files over about 1 MB or
